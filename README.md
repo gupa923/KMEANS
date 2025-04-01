@@ -1,6 +1,7 @@
 Progetto universitario per il corso Programmazione di sistemi embeded e multicore
 
 Dati del codice:
+
 -data = matrice contenente i punti contenuti nel file input.
 
 -centroidPos = array che contiene in numero della linea del cenroide iniziale nel file input.
