@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
 	int minChanges= (int)(lines*atof(argv[4])/100.0);
 	float maxThreshold=atof(argv[5]);
 
-	int *centroidPos = (int*)calloc(K,sizeof(int));  //contiene la posizione dei centroidi iniziali nella struttura dati in input
+	int *centroidPos = (int*)calloc(K,sizeof(int));  //contiene la posizione dei centroidi iniziali nella struttura dati in input ovvero la linea corrispondente al punto
 	float *centroids = (float*)calloc(K*samples,sizeof(float));  //lista dei centroidi, ogni elemento è la lista di coordinate del centroide
 	int *classMap = (int*)calloc(lines,sizeof(int));  //per ogni punto contiene i cluster a cui è associato
 
