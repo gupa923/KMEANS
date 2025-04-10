@@ -14,6 +14,23 @@
  * This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
  * https://creativecommons.org/licenses/by-sa/4.0/
  */
+
+
+//#########IN CASE THE COMPILER DOESN´T SUPPORT OMP###########
+
+# ifdef _OPENMP
+#include <omp.h>
+#endif
+
+/*
+# ifdef _OPENMP
+	int my_rank= omp_get_thread_num();
+	int thread_count = omp_get_num_threads();
+# else
+	int my_rank =0;
+	int thread_count =1;
+# endif
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -21,7 +38,7 @@
 #include <time.h>
 #include <string.h>
 #include <float.h>
-#include <omp.h>
+
 
 #define MAXLINE 2000
 #define MAXCAD 200
@@ -226,6 +243,8 @@ int main(int argc, char* argv[])
 	*          algorithm stops.
 	* argv[6]: Output file. Class assigned to each point of the input file.
 	* */
+
+
 	if(argc !=  7)
 	{
 		fprintf(stderr,"EXECUTION ERROR K-MEANS: Parameters are not correct.\n");
@@ -258,6 +277,7 @@ int main(int argc, char* argv[])
 		exit(error);
 	}
 
+
 	// Parameters
 	int K=atoi(argv[2]); 
 	int maxIterations=atoi(argv[3]);
@@ -273,7 +293,6 @@ int main(int argc, char* argv[])
 		fprintf(stderr,"Memory allocation error.\n");
 		exit(-4);
 	}
-
 	// Initial centrodis
 	srand(0);
 	int i;
@@ -354,36 +373,48 @@ int main(int argc, char* argv[])
 		}
 
 		// 2. Recalculates the centroids: calculates the mean within each cluster
-		zeroIntArray(pointsPerClass,K);
-		zeroFloatMatriz(auxCentroids,K,samples);
 
-		for(i=0; i<lines; i++) 
+		#pragma omp_parallel num_threads(4)
 		{
-			class=classMap[i];
-			pointsPerClass[class-1] = pointsPerClass[class-1] +1;
-			for(j=0; j<samples; j++){
-				auxCentroids[(class-1)*samples+j] += data[i*samples+j];
+			int my_rank = omp_get_thread_num();
+			int thread_count= omp_get_num_threads();
+			printf("Hello from thread %d of %d\n", my_rank, thread_count);
+
+
+			zeroIntArray(pointsPerClass,K);
+			zeroFloatMatriz(auxCentroids,K,samples);
+
+			for(i=0; i<lines; i++) 
+			{
+				class=classMap[i];
+				pointsPerClass[class-1] = pointsPerClass[class-1] +1;
+				for(j=0; j<samples; j++){
+					auxCentroids[(class-1)*samples+j] += data[i*samples+j];
+				}
 			}
+
+			for(i=0; i<K; i++) 
+			{
+				for(j=0; j<samples; j++){
+					auxCentroids[i*samples+j] /= pointsPerClass[i];
+				}
+			}
+			
+			maxDist=FLT_MIN;
+			for(i=0; i<K; i++){
+				distCentroids[i]=euclideanDistance(&centroids[i*samples], &auxCentroids[i*samples], samples);
+				if(distCentroids[i]>maxDist) {
+					maxDist=distCentroids[i];
+				}
+			}
+			memcpy(centroids, auxCentroids, (K*samples*sizeof(float)));
+			
+			sprintf(line,"\n[%d] Cluster changes: %d\tMax. centroid distance: %f", it, changes, maxDist);
+			outputMsg = strcat(outputMsg,line);
+
 		}
 
-		for(i=0; i<K; i++) 
-		{
-			for(j=0; j<samples; j++){
-				auxCentroids[i*samples+j] /= pointsPerClass[i];
-			}
-		}
 		
-		maxDist=FLT_MIN;
-		for(i=0; i<K; i++){
-			distCentroids[i]=euclideanDistance(&centroids[i*samples], &auxCentroids[i*samples], samples);
-			if(distCentroids[i]>maxDist) {
-				maxDist=distCentroids[i];
-			}
-		}
-		memcpy(centroids, auxCentroids, (K*samples*sizeof(float)));
-		
-		sprintf(line,"\n[%d] Cluster changes: %d\tMax. centroid distance: %f", it, changes, maxDist);
-		outputMsg = strcat(outputMsg,line);
 
 	} while((changes>minChanges) && (it<maxIterations) && (maxDist>maxThreshold));
 
