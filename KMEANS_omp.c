@@ -376,9 +376,9 @@ int main(int argc, char* argv[])
 
 		#pragma omp parallel num_threads(4)
 		{
-			int my_rank = omp_get_thread_num();
-			int thread_count= omp_get_num_threads();
-			printf("Hello from thread %d of %d\n", my_rank, thread_count);
+			//int my_rank = omp_get_thread_num();
+			//int thread_count= omp_get_num_threads();
+			//printf("Hello from thread %d of %d\n", my_rank, thread_count);
 
 
 			zeroIntArray(pointsPerClass,K);
