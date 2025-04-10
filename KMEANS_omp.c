@@ -374,7 +374,7 @@ int main(int argc, char* argv[])
 
 		// 2. Recalculates the centroids: calculates the mean within each cluster
 
-		#pragma omp_parallel num_threads(4)
+		#pragma omp parallel num_threads(4)
 		{
 			int my_rank = omp_get_thread_num();
 			int thread_count= omp_get_num_threads();
