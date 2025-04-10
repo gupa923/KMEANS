@@ -328,6 +328,11 @@ int main(int argc, char* argv[])
  * START HERE: DO NOT CHANGE THE CODE ABOVE THIS POINT
  *
  */
+	int comm_sz;
+	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+	int my_start = (lines / comm_sz) * rank;
+	int my_end = (lines / comm_sz) * (rank + 1);
 
 	do{
 		it++;
@@ -335,7 +340,7 @@ int main(int argc, char* argv[])
 		//1. Calculate the distance from each point to the centroid
 		//Assign each point to the nearest centroid.
 		changes = 0;
-		for(i=0; i<lines; i++)
+		for(i=my_start; i<my_end; i++)
 		{
 			class=1;
 			minDist=FLT_MAX;
@@ -360,7 +365,7 @@ int main(int argc, char* argv[])
 		zeroIntArray(pointsPerClass,K);
 		zeroFloatMatriz(auxCentroids,K,samples);
 
-		for(i=0; i<lines; i++) 
+		for(i=my_start; i<my_end; i++) 
 		{
 			class=classMap[i];
 			pointsPerClass[class-1] = pointsPerClass[class-1] +1;
@@ -368,6 +373,13 @@ int main(int argc, char* argv[])
 				auxCentroids[(class-1)*samples+j] += data[i*samples+j];
 			}
 		}
+
+		MPI_Allreduce(MPI_IN_PLACE, auxCentroids, K * samples, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+		MPI_Allreduce(MPI_IN_PLACE, pointsPerClass, K, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+		int totalChanges;
+		MPI_Allreduce(&changes, &totalChanges, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+		changes = totalChanges;
 
 		for(i=0; i<K; i++) 
 		{
@@ -385,11 +397,13 @@ int main(int argc, char* argv[])
 		}
 		memcpy(centroids, auxCentroids, (K*samples*sizeof(float)));
 		
-		sprintf(line,"\n[%d] Cluster changes: %d\tMax. centroid distance: %f", it, changes, maxDist);
-		outputMsg = strcat(outputMsg,line);
+		if (rank == 0){
+			sprintf(line,"\n[%d] Cluster changes: %d\tMax. centroid distance: %f", it, changes, maxDist);
+			outputMsg = strcat(outputMsg,line);
+		}
 
 	} while((changes>minChanges) && (it<maxIterations) && (maxDist>maxThreshold));
-
+	MPI_Allreduce(MPI_IN_PLACE, classMap, lines, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 /*
  *
  * STOP HERE: DO NOT CHANGE THE CODE BELOW THIS POINT

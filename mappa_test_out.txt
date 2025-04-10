@@ -1,0 +1,13 @@
+./KMEANS_seq test_files/input2D2.inp 4 20 0.2 0.0001 out_files/compare_w_mpi.inp 
+mpirun -oversubscribe -np 4 ./KMEANS_mpi test_files/input2D2.inp 4 20 0.2 0.0001 out_files/mpi_test1.inp
+
+I file di output sono uguali. Per i tempi devo vedere meglio
+
+__________________________________________________________________________________________________________________
+
+./KMEANS_seq test_files/input2D.inp 100 300 0.05 0.0001 out_files/compare_w_mpi2.inp
+mpirun -oversubscribe -np 4 ./KMEANS_mpi test_files/input2D.inp 100 300 0.05 0.0001 out_files/mpi_test2.inp
+
+I file output sono uguali. Per i tempi stessa cosa
+
+__________________________________________________________________________________________________________________
