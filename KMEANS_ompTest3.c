@@ -209,15 +209,13 @@ This function could be modified
 */
 void zeroFloatMatriz(float *matrix, int rows, int columns)
 {
-	int i,j;
-	#pragma omp parallel num_threads(4)
-	{
+	int ij;	
+	#pragma omp parallel for num_threads(4)
+	for (ij=0; ij<rows*columns; ij++)
 		
-		#pragma omp parallel for collapse(2)
-		for (i=0; i<rows; i++)
-			for (j=0; j<columns; j++)
-				matrix[i*columns+j] = 0.0;
-	}
+		
+		matrix[ij+ij%columns] = 0.0;
+
 		
 }
 
@@ -228,13 +226,12 @@ This function could be modified
 void zeroIntArray(int *array, int size)
 {
 	int i;
-	#pragma omp parallel num_threads(4)
-	{
+	
 		
-		#pragma omp parallel for
-		for (i=0; i<size; i++)
-			array[i] = 0;	
-	}
+	#pragma omp parallel for num_threads(4)
+	for (i=0; i<size; i++)
+		array[i] = 0;	
+	
 	
 }
 
@@ -393,17 +390,17 @@ int main(int argc, char* argv[])
 
 		// 2. Recalculates the centroids: calculates the mean within each cluster
 
-		#pragma omp parallel num_threads(4)
-		{
+		
 			//int my_rank = omp_get_thread_num();
 			//int thread_count= omp_get_num_threads();
 			//printf("Hello from thread %d of %d\n", my_rank, thread_count);
 
 
-			zeroIntArray(pointsPerClass,K);
-			zeroFloatMatriz(auxCentroids,K,samples);
-		
-		
+		zeroIntArray(pointsPerClass,K);
+		zeroFloatMatriz(auxCentroids,K,samples);
+	
+		#pragma omp parallel num_threads(4)
+		{
 			for(i=0; i<lines; i++) 
 			{
 				class=classMap[i];
@@ -414,10 +411,11 @@ int main(int argc, char* argv[])
 				}
 			}
 		}
-			
+		
+		int KSamples = K*samples;
+		int ij ;
 		#pragma omp parallel for num_threads(4)
-
-		for (int ij=0;ij<K*samples;ij++)
+		for (ij=0;ij<KSamples;ij++)
 		{
 			auxCentroids[ij+ij%samples] /= pointsPerClass[ij/samples];
 		}
