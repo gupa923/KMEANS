@@ -331,6 +331,10 @@ int main(int argc, char* argv[])
 	int comm_sz;
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
+
+	/**
+	 * @todo controllare quando il numero di processi non divide il numero di punti
+	 */
 	int my_start = (lines / comm_sz) * rank;
 	int my_end = (lines / comm_sz) * (rank + 1);
 
