@@ -5,3 +5,4 @@ KMEANS_mpi
 KMEANS_omp
 KMEANS_omp2.o
 KMEANS_omp3.o
+KMEANS_ompTest4
