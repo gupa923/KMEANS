@@ -4,7 +4,7 @@
 # cambia il nome dei file per fare test su file diversi
 
 # Confronta i due file riga per riga
-diff out_files/seq_10D.inp out_files/omp_10D.inp > /dev/null
+diff out_files/seq_100D.inp out_files/mpi_100D.inp > /dev/null
 
 # Verifica l'esito del comando diff
 if [ $? -eq 0 ]; then
