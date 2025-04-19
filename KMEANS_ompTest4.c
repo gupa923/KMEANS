@@ -209,17 +209,20 @@ This function could be modified
 */
 void zeroFloatMatriz(float *matrix, int rows, int columns)
 {
-	//int ij;	
-	//#pragma omp parallel for num_threads(4)// schedule(dynamic,1)
-	//for (ij=0; ij<rows*columns; ij++)
-	//	matrix[ij+ij%columns] = 0.0;
+	int ij;	
+	#pragma omp parallel for num_threads(4)// schedule(dynamic,1)
+	for (ij=0; ij<rows*columns; ij++)
+		matrix[(ij/columns*columns)+(ij%columns)] = 0.0;
+	/*
 	int i,j;
 	
 		
-	#pragma omp parallel for collapse(2)
+	#pragma omp parallel for num_threads(4) collapse(2)
 	for (i=0; i<rows; i++)
 		for (j=0; j<columns; j++)
 			matrix[i*columns+j] = 0.0;
+	*/
+	
 	
 }
 
@@ -398,40 +401,63 @@ int main(int argc, char* argv[])
 			
 
 			
-			zeroIntArray(pointsPerClass,K);
-			zeroFloatMatriz(auxCentroids,K,samples);
+		zeroIntArray(pointsPerClass,K);
+		zeroFloatMatriz(auxCentroids,K,samples);
 		//}
 
 
-		#pragma omp parallel num_threads(4)
+		//#pragma omp parallel num_threads(4)
+		//{
+			
+		
+		for(i=0; i<lines; i++) 
 		{
-			for(i=0; i<lines; i++) 
-			{
-				class=classMap[i];
-				pointsPerClass[class-1] = pointsPerClass[class-1] +1;
-				for(j=0; j<samples; j++){
-					auxCentroids[(class-1)*samples+j] += data[i*samples+j];
-				}
+			class=classMap[i];
+			pointsPerClass[class-1] = pointsPerClass[class-1] +1;
+			for(j=0; j<samples; j++){
+				auxCentroids[(class-1)*samples+j] += data[i*samples+j];
 			}
-
-			//int KSamples = K*samples;
-			//int ij ;
-			//#pragma omp parallel for num_threads(4) 
-			//for (ij=0;ij<KSamples;ij++)
-			//{
-			//	auxCentroids[ij+ij%samples] /= pointsPerClass[ij/samples];
-			//}
 		}
-		#pragma omp parallel for collapse(2)
+
+		//int KSamples = K*samples;
+		//int ij;
+		
+		
+		#pragma omp parallel for num_threads(4) 
+		for (int ij=0;ij<K*samples;ij++)
+		{
+			
+			//#pragma omp critical
+			//{
+				//printf("%d \n", ij);
+			auxCentroids[(ij/samples*samples)+(ij%samples)] /= pointsPerClass[ij/samples];///samples];
+
+			//}
+			
+		}
+		
+		
+		
+		
+		
+		//}
+		
+		/*
+		#pragma omp parallel for num_threads(4) collapse(2)
 		for(i=0; i<K; i++) 
 		{
 			for(j=0; j<samples; j++){
 				auxCentroids[i*samples+j] /= pointsPerClass[i];
+				//int my_rank = omp_get_thread_num();
+				//int thread_count= omp_get_num_threads();
+				//printf("Hello from thread %d of %d\n", my_rank, thread_count);
 			}
 		}
-
+		*/
+		
+		/////////////////////////////////////////////////////////////////
 		maxDist=FLT_MIN;
-		#pragma omp parallel for num_threads(4)
+		//#pragma omp parallel for num_threads(4)
 		for(i=0; i<K; i++){
 			distCentroids[i]=euclideanDistance(&centroids[i*samples], &auxCentroids[i*samples], samples);
 			if(distCentroids[i]>maxDist) {
@@ -439,13 +465,12 @@ int main(int argc, char* argv[])
 			}
 			
 		}
-		#pragma omp parallel num_threads(4)
-		{
-			memcpy(centroids, auxCentroids, (K*samples*sizeof(float)));
-			
-			sprintf(line,"\n[%d] Cluster changes: %d\tMax. centroid distance: %f", it, changes, maxDist);
-			outputMsg = strcat(outputMsg,line);
-		}
+		
+		memcpy(centroids, auxCentroids, (K*samples*sizeof(float)));
+		
+		sprintf(line,"\n[%d] Cluster changes: %d\tMax. centroid distance: %f", it, changes, maxDist);
+		outputMsg = strcat(outputMsg,line);
+		
 		
 
 		
