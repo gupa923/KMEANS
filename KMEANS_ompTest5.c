@@ -188,18 +188,11 @@ This function could be modified
 float euclideanDistance(float *point, float *center, int samples)
 {
 	float dist=0.0;
-	//#pragma omp parallel num_threads(4) reduction(+:dist)
-	//{
-	//float partResult=0.0;
-	//#pragma omp parallel for 
 	for(int i=0; i<samples; i++) 
 	{
-		//partResult += (point[i]-center[i])*(point[i]-center[i]);
 		dist+= (point[i]-center[i])*(point[i]-center[i]);
 	}
-	//#pragma omp critical
-	//dist = sqrt(partResult);
-	//}
+	dist = sqrt(dist);
 	return(dist);
 }
 
@@ -374,7 +367,9 @@ int main(int argc, char* argv[])
 		//Assign each point to the nearest centroid.
 		//#pragma omp parallel num_threads(8) 
 		changes = 0;
+		
 		/*
+		//OPZIONE 1 (non funziona)
 		#pragma omp parallel for num_threads(8) private(dist) collapse(2) 
 		for(i=0; i<lines; i++)
 		{
@@ -382,16 +377,16 @@ int main(int argc, char* argv[])
 
 			for(j=0; j<K; j++)
 			{
+				
+				if (j==0)
+				{
+					class=1;
+					minDist=FLT_MAX;
+				}
+			
+				dist=euclideanDistance(&data[i*samples], &centroids[j*samples], samples);
 				#pragma omp critical
 				{
-					if (j==0)
-					{
-						class=1;
-						minDist=FLT_MAX;
-					}
-					
-					dist=euclideanDistance(&data[i*samples], &centroids[j*samples], samples);
-				
 					if(dist < minDist)
 					{
 						
@@ -401,16 +396,17 @@ int main(int argc, char* argv[])
 						class=j+1;
 					}	
 					
-				
-					if (j==0)
-					{
-						if(classMap[i]!=class)
-						{
-							changes++;
-						}
-						classMap[i]=class;
-					}
 				}
+				if (j==0)
+				{
+					if(classMap[i]!=class)
+					{
+						#pragma omp atomic
+						changes++;
+					}
+					classMap[i]=class;
+				}
+			
 			
 			}
 		
@@ -419,7 +415,8 @@ int main(int argc, char* argv[])
 		*/
 		
 		///*
-		
+		//OPZIONE 2 (funziona ma va lento perche' non e' parallelizzato il primo for)
+		//printf("%d\n", lines);
 		for(i=0; i<lines; i++)
 		{
 			class=1;
@@ -434,10 +431,6 @@ int main(int argc, char* argv[])
 				//int my_rank = omp_get_thread_num();
 				//int thread_count= omp_get_num_threads();
 				//printf("Hello from thread %d of %d\n", my_rank, thread_count);
-				
-					
-				
-				
 				dist=euclideanDistance(&data[i*samples], &centroids[j*samples], samples);
 				#pragma omp critical
 				{
@@ -462,6 +455,7 @@ int main(int argc, char* argv[])
 		}
 		//*/
 		/*
+		//OPZIONE 3 (non funziona)
 		#pragma omp parallel for num_threads(8) private(dist) 
 		for(int ij=0; ij<lines*K; ij++)
 		{
@@ -470,8 +464,8 @@ int main(int argc, char* argv[])
 				class=1;
 				minDist=FLT_MAX;
 			}
-				
-			dist=euclideanDistance(&data[(ij/K)*samples], &centroids[(ij%K)*samples], samples);
+			//printf("%d\n", ij/K*samples);
+			dist=euclideanDistance(&data[ij/K*samples], &centroids[(ij%K)*samples], samples);
 			#pragma omp critical
 			{
 				//dist=euclideanDistance(&data[(ij/K)*samples], &centroids[(ij%K)*samples], samples);
@@ -496,8 +490,8 @@ int main(int argc, char* argv[])
 			}
 			
 		}
-		*/
-		
+		printf("\nDONE\n");
+		//*/
 
 		// 2. Recalculates the centroids: calculates the mean within each cluster
 
