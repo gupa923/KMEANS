@@ -16,11 +16,9 @@
  */
 
 
-//#########IN CASE THE COMPILER DOESN´T SUPPORT OMP###########
 
-# ifdef _OPENMP
 #include <omp.h>
-#endif
+
 
 /*
 # ifdef _OPENMP
@@ -414,7 +412,7 @@ int main(int argc, char* argv[])
 		}
 		*/
 		
-		///*
+		/*
 		//OPZIONE 2 (funziona ma va lento perche' non e' parallelizzato il primo for)
 		//printf("%d\n", lines);
 		for(i=0; i<lines; i++)
@@ -453,35 +451,48 @@ int main(int argc, char* argv[])
 			}
 			classMap[i]=class;
 		}
-		//*/
-		/*
-		//OPZIONE 3 (non funziona)
-		#pragma omp parallel for num_threads(8) private(dist) 
+		*/
+		///*
+		//OPZIONE 3 (funziona ma e' da parallelizzare)
+		
+		int counter=0;
+		
+
+		//#pragma omp parallel for num_threads(8) private(dist) 
 		for(int ij=0; ij<lines*K; ij++)
 		{
 			
-			if (ij%K==0){
+			if ((ij%K)==0)
+			{
 				class=1;
 				minDist=FLT_MAX;
 			}
 			//printf("%d\n", ij/K*samples);
 			dist=euclideanDistance(&data[ij/K*samples], &centroids[(ij%K)*samples], samples);
-			#pragma omp critical
+			//#pragma omp critical
+			//{
+					
+			if(dist < minDist)
 			{
-				//dist=euclideanDistance(&data[(ij/K)*samples], &centroids[(ij%K)*samples], samples);
-				if(dist < minDist)
-				{
-					
-					minDist=dist;
-					
-					
-					class=(ij%K)+1;
-				}	
+				
+				minDist=dist;
+				
+				
+				class=(ij%K)+1;
+			}	
+			//}
+			
+			
+			if (counter <=K)
+			{
+				
+				counter++;
 			}
 			
-				
-			
-			if (ij%K==0){
+			//if (((ij%K)==0))
+			if (counter==K)
+			{
+				counter=0;
 				if(classMap[(ij/K)]!=class)
 				{
 					changes++;
@@ -490,7 +501,9 @@ int main(int argc, char* argv[])
 			}
 			
 		}
-		printf("\nDONE\n");
+		
+		
+		//printf("\n%d\n", ij);
 		//*/
 
 		// 2. Recalculates the centroids: calculates the mean within each cluster
@@ -521,9 +534,9 @@ int main(int argc, char* argv[])
 		//int KSamples = K*samples;
 		//int ij;
 		
-		
+		int ij =0;
 		#pragma omp parallel for num_threads(8) 
-		for (int ij=0;ij<K*samples;ij++)
+		for (ij=0;ij<K*samples;ij++)
 		{
 			
 			//#pragma omp critical
